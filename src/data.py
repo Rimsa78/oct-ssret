@@ -242,6 +242,55 @@ def get_kermany_loaders(batch_size: int = 32, image_size: int = 256,
     return tr, va, te
 
 
+class OCTDLDataset(Dataset):
+    """Wraps `ArmisticeAI/OCTDL2024` for zero-shot cross-cohort testing.
+    OCTDL has 5 disease classes; we map to the Kermany 4-class scheme.
+    Mapping (mirrors the OCTID convention):
+        NORMAL  -> 3 (NORMAL)
+        AMD     -> 2 (DRUSEN, AMD ~ drusen-bearing)
+        DR      -> 1 (DME, closest analog)
+        MH      -> 0 (CNV, closest macular pathology analog)
+        RVO     -> -1 (drop, no Kermany analog)
+    """
+    OCTDL_TO_KERMANY = {
+        # OCTDL ClassLabel order: ['MH', 'DR', 'AMD', 'NORMAL', 'RVO']
+        0: 0,   # MH -> CNV
+        1: 1,   # DR -> DME
+        2: 2,   # AMD -> DRUSEN
+        3: 3,   # NORMAL -> NORMAL
+        4: -1,  # RVO -> drop
+    }
+
+    def __init__(self, rows, image_size: int = 256):
+        self.rows = []
+        for r in rows:
+            mapped = self.OCTDL_TO_KERMANY.get(int(r["label"]))
+            if mapped is not None and mapped >= 0:
+                self.rows.append((r, mapped))
+        self.image_size = image_size
+
+    def __len__(self):
+        return len(self.rows)
+
+    def __getitem__(self, idx):
+        row, label = self.rows[idx]
+        img = _to_numpy_image(row["image"])
+        img = _resize_pad_to_square(img, self.image_size)
+        img = _light_clahe(img)
+        img_t = torch.from_numpy(img.astype(np.float32) / 255.0).permute(2, 0, 1)
+        return {"image": img_t, "label": int(label)}
+
+
+def get_octdl_loader(batch_size: int = 16, image_size: int = 256, num_workers: int = 2):
+    from datasets import load_dataset, concatenate_datasets
+    ds = load_dataset("ArmisticeAI/OCTDL2024")
+    # use train+val+test combined as a zero-shot transfer cohort (we never train on OCTDL)
+    combined = concatenate_datasets([ds["train"], ds["validation"], ds["test"]])
+    octdl_ds = OCTDLDataset(combined, image_size=image_size)
+    return DataLoader(octdl_ds, batch_size=batch_size, shuffle=False,
+                      num_workers=num_workers, pin_memory=True)
+
+
 def get_octid_loader(batch_size: int = 32, image_size: int = 256, num_workers: int = 2):
     from datasets import load_dataset
     ds = load_dataset("ai4ophth/OCTID_dataset", split="train")
