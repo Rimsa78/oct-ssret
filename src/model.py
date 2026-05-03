@@ -73,6 +73,19 @@ class OCTSSRet(nn.Module):
             self._swin_features = net.features
             self._swin_norm = net.norm
             self.backbone = "_swin"  # special-cased in forward
+        elif backbone == "retfound_vit_l":
+            # OCT-specific MAE-pretrained ViT-Large from RETFound (Zhou et al. Nature 2023).
+            # We use the timm vit_large_patch16_224 architecture and load the
+            # RETFound encoder weights (decoder + mask_token are dropped).
+            import timm
+            self._retfound = timm.create_model("vit_large_patch16_224", pretrained=False, num_classes=0)
+            ckpt_path = "/home/rojan/.cache/huggingface/hub/models--YukunZhou--RETFound_mae_natureOCT/snapshots/8e551e2f547d3e27aedf43c9cf1c5bcea1c17171/RETFound_mae_natureOCT.pth"
+            sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)["model"]
+            sd = {k: v for k, v in sd.items() if not k.startswith("decoder_") and k != "mask_token"}
+            missing, unexpected = self._retfound.load_state_dict(sd, strict=False)
+            assert len(missing) == 0 and len(unexpected) == 0, (missing, unexpected)
+            dim = 1024
+            self.backbone = "_retfound"
         elif backbone == "vit_b_16":
             # Vision-Transformer B/16 returns (B, N+1, 768) including CLS; we drop CLS
             # and reshape into a feature map for the same downstream pipeline.
@@ -112,7 +125,17 @@ class OCTSSRet(nn.Module):
         nn.init.zeros_(self.cls_head.bias)
 
     def forward(self, x):
-        if self.backbone_name == "swin_v2_t":
+        if self.backbone_name == "retfound_vit_l":
+            # ViT-L wants 224x224
+            if x.shape[-1] != 224:
+                x = F.interpolate(x, size=(224, 224), mode="bilinear", align_corners=False)
+            # Use timm's forward_features to get the full token sequence (B, 1+196, 1024)
+            tokens_full = self._retfound.forward_features(x)   # includes CLS at index 0
+            tokens = tokens_full[:, 1:]                         # drop CLS, keep 196 patches
+            B, N, D = tokens.shape
+            Hf = Wf = int(N ** 0.5)
+            feat_map = tokens.transpose(1, 2).reshape(B, D, Hf, Wf)
+        elif self.backbone_name == "swin_v2_t":
             f = self._swin_features(x)              # (B, H, W, C) for Swin-V2 (channels-last)
             f = self._swin_norm(f)
             feat_map = f.permute(0, 3, 1, 2)        # (B, C, H, W)

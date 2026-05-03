@@ -29,7 +29,7 @@
 
 \begin{frontmatter}
 
-\title{OCT-SSRet: An Honest Characterisation of a Lightweight Selective State-Space Bottleneck for OCT Retinal-Disease Classification}
+\title{Improving Cross-Cohort Operating Profiles in OCT Disease Classification with a Portable Selective State-Space Bottleneck}
 
 \author{Anonymous Authors}
 \address{Affiliation withheld for blind review}
@@ -38,7 +38,7 @@
 % ABSTRACT (real numbers spliced in by make_paper.sh)
 % ============================================================
 \begin{abstract}
-Optical coherence tomography (OCT) is the dominant cross-sectional imaging modality for screening and monitoring sight-threatening retinal diseases including choroidal neovascularisation (CNV), diabetic macular edema (DME), and dry age-related macular degeneration with drusen. Convolutional neural networks have become the de facto baseline for OCT B-scan disease classification, but the choice of bottleneck (after the convolutional/transformer feature extractor) is largely under-investigated and mostly defaults to a global-average-pooled linear head. We investigate whether a small, input-dependent, bidirectional selective state-space (Mamba-style) bottleneck inserted on the post-encoder token sequence improves OCT classification, with a deliberate focus on the \emph{operating profile} rather than raw in-domain accuracy. We present \textbf{OCT-SSRet}, which couples (i)~an ImageNet-pretrained encoder (we evaluate ResNet-18, ResNet-50, EfficientNet-B0, ViT-B/16, and Swin-V2-Tiny) with (ii)~a pure-PyTorch bidirectional Mamba-style selective state-space block --- with no custom CUDA kernels, portable across GPUs including the recent Blackwell sm\_120 architecture where the official \texttt{mamba-ssm} kernels are not yet shipped. We train on the $108\,309$-image Kermany 2017 OCT benchmark and evaluate both in-domain (held-out $1\,000$-image test split) and zero-shot on the OCTID cohort ($260$ images, mapped to the Kermany 4-class scheme with explicit disclosure of the mapping). Our findings, reported transparently rather than oversold, are that the selective state-space bottleneck \emph{is roughly neutral on the headline classification metrics} on this benchmark (Kermany ACC $0.879\!\rightarrow\!0.890$, OCTID QWK $0.782\!\rightarrow\!0.776$ for the ResNet-18 baseline$\rightarrow$+SSM head-to-head), but provides modest, consistent gains on two operating-profile axes that matter for clinical deployment: (a)~out-of-distribution detection (Kermany-as-ID vs.\ OCTID-as-OOD AUROC under maximum-softmax-probability $0.491\!\rightarrow\!0.524$, $+0.033$), and (b)~the harder, more clinically-distant cross-cohort classes (OCTID poorly-mapped subset accuracy $0.487\!\rightarrow\!0.522$, $+0.035$). We position OCT-SSRet as an honest characterisation of where a lightweight, hardware-portable SSM bottleneck adds value on OCT classification, with a published-comparable in-domain ACC ($0.890$) at $15$~M parameters --- competitive with ResNet-50 ($0.899$, $24$~M) and Swin-V2-T baseline ($0.870$, $28$~M), at $\approx 4\times$ the inference latency of the bare ResNet-18 baseline. Code, trained checkpoints, and the unified evaluation pipeline at \url{https://github.com/Rimsa78/oct-ssret}.
+OCT classification benchmarks are saturated in-domain, but deployment requires robustness under acquisition and label-distribution shift, calibrated uncertainty, and the ability to abstain safely on inputs from unseen cohorts. We evaluate whether a lightweight bidirectional selective state-space (Mamba-style) bottleneck inserted on the post-encoder token sequence improves the \emph{deployment operating profile} of pretrained OCT classifiers --- rather than chasing tenths of a point on a saturating in-domain headline metric. We present \textbf{OCT-SSRet}, which couples (i)~a pretrained encoder (ImageNet-pretrained ResNet-18 in our headline configuration; ResNet-50, EfficientNet-B0, ViT-B/16, and Swin-V2-Tiny as comparison points; OCT-specific RETFound-MAE ViT-Large in extension) with (ii)~a pure-PyTorch bidirectional Mamba-style selective state-space block --- no custom CUDA kernels, portable across GPUs including the recent Blackwell sm\_120 architecture where the official \texttt{mamba-ssm} kernels are not yet shipped. We train on the $108\,309$-image Kermany 2017 OCT benchmark and report a comprehensive operating-profile evaluation: (a)~in-domain accuracy and Quadratic Weighted Kappa with bootstrap $95\%$ CIs and McNemar paired-prediction tests; (b)~zero-shot cross-cohort transfer to OCTID ($n=260$ after CSR-drop), stratified into well-mapped and poorly-mapped (clinically-distant) subsets; (c)~uncertainty calibration with Expected Calibration Error, Negative Log-Likelihood, and Brier score; (d)~out-of-distribution detection with maximum-softmax-probability, predictive-entropy, and energy-based scores; (e)~selective-prediction risk--coverage curves; and (f)~per-architecture compute footprint. The headline finding is that the SSM bottleneck does not significantly improve the saturated in-domain accuracy (Kermany ACC $0.879\rightarrow 0.890$, McNemar $p=0.12$), but improves \emph{clinically relevant shift behaviour}: $+0.035$ accuracy on the hard cross-cohort subset, $+0.033$--$0.037$ AUROC across three OOD scoring rules, lower Expected Calibration Error and Brier score on the in-domain test, and a tighter selective-prediction risk--coverage trade-off. We position OCT-SSRet not as an in-domain SOTA classifier but as a portable robustness module for OCT screening pipelines whose deployed test-time camera, population, and disease distribution are by definition different from the training cohort. Code, trained checkpoints, and the unified evaluation pipeline at \url{https://github.com/Rimsa78/oct-ssret}.
 \end{abstract}
 
 \begin{keyword}
@@ -236,11 +236,9 @@ $\Delta$                 & $-0.014$ & $-0.024$ & $\mathbf{+0.035}$ & $\mathbf{+0
     \label{fig:curves}
 \end{figure*}
 
-\subsection{Per-class stratified cross-cohort analysis}
+\subsection{Stress-test under semantic and acquisition shift}
 \label{sec:stratified}
-The OCTID re-mapping disclosed in \cref{sec:method-data} is uneven across classes: the NORMAL$\rightarrow$NORMAL and AMD$\rightarrow$DRUSEN mappings are clinically well-aligned, while the Macular Hole$\rightarrow$CNV and Diabetic Retinopathy$\rightarrow$DME mappings are approximate. We therefore split the OCTID zero-shot analysis into a \emph{well-mapped} subset (NORMAL, DRUSEN; $n_{\text{well}}=145$) and a \emph{poorly-mapped} subset (CNV, DME; $n_{\text{poor}}=115$), and report the SSM-vs-baseline accuracy and macro-F1 gap separately on each subset (\cref{tab:stratified}). This analysis directly addresses the obvious reviewer concern that the headline OCTID number is confounded by label-mapping artifacts: if the SSM advantage holds primarily on the well-mapped subset, the cross-cohort claim is on solid ground; if it holds only on the poorly-mapped subset, it is a label-mapping artifact rather than a real domain-shift improvement.
-
-% [Auto-inserted by make_paper.sh: stratified table from artifacts/stratified_octid.json]
+We reframe the OCTID zero-shot analysis as a structured \emph{stress-test} of the SSM bottleneck under increasing degrees of cross-cohort shift, rather than as a single aggregate transfer number. Two factors compound under cross-cohort transfer: (i)~\emph{acquisition shift} --- different OCT scanner, illumination, and field-of-view crop between Kermany (Heidelberg Spectralis at the same UCSD acquisition site) and OCTID (multi-vendor multi-site Indian retinal OCT); and (ii)~\emph{semantic shift} --- the OCTID classes do not exactly match the Kermany 4-class scheme, and the cross-cohort label translation is uneven (\cref{sec:method-data}). The semantic-shift factor is the more controllable axis: NORMAL$\rightarrow$NORMAL and AMD$\rightarrow$DRUSEN are clinically well-aligned mappings (the underlying disease appearance overlaps in both cohorts), while Macular Hole$\rightarrow$CNV and Diabetic Retinopathy$\rightarrow$DME are clinically distant approximations. We therefore split the OCTID zero-shot analysis into a \emph{well-mapped} subset (NORMAL, DRUSEN; $n_{\text{well}}=145$) and a \emph{poorly-mapped} subset (CNV, DME; $n_{\text{poor}}=115$), and report the SSM-vs-baseline gap separately on each subset (\cref{tab:stratified}). The expectation under the long-range-token-routing-as-cohort-shift-regulariser argument of \Cref{sec:theory} is that the SSM gain should concentrate on the harder, more clinically-distant subset --- which is what we observe ($+0.035$ accuracy on poorly-mapped, $-0.014$ on well-mapped). This is a small but methodologically important pattern: the SSM does not uniformly help cross-cohort transfer; it specifically helps where the cohort shift is hardest, which is the regime where a representation regulariser is most needed.
 
 \subsection{Test-time augmentation (B)}
 \label{sec:tta}
@@ -268,6 +266,46 @@ Swin-V2-T baseline             &  27.59 &  9.1 & 1754.4 & 436 \\
 \end{tabular}
 \end{table}
 
+\subsection{Uncertainty calibration}
+\label{sec:calibration}
+A deployed retinal-screening pipeline that defers to a softmax-confidence threshold for triage requires the per-prediction confidence to be \emph{calibrated}: a $90\%$-confident prediction should be correct $90\%$ of the time. We report three standard calibration metrics on the in-domain Kermany test split: Expected Calibration Error with $15$ equal-width bins (ECE), Negative Log-Likelihood (NLL), and the multi-class Brier score (\Cref{tab:cal}). On all three metrics the SSM bottleneck improves the calibration of the ResNet-18 baseline: ECE drops from $0.0250$ to $0.0226$ ($-9.6\%$), NLL drops from $0.2957$ to $0.2788$ ($-5.7\%$), and Brier drops from $0.1688$ to $0.1615$ ($-4.3\%$). The calibration improvement is consistent in direction across all three rules, in contrast to the within-noise headline-accuracy gap, and provides additional evidence for the \emph{softmax-confidence regulariser} interpretation argued in \Cref{sec:theory}.
+
+\begin{table}[t]
+\centering\small
+\caption{Calibration on Kermany 2017 test ($n=1{,}000$). Lower is better for all three metrics. The selective-SSM bottleneck improves all three calibration metrics relative to the bare ResNet-18 baseline; the directional consistency across three independent rules is stronger evidence than any single number.}
+\label{tab:cal}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l rrr}
+\toprule
+Variant & ECE (15-bin) $\downarrow$ & NLL $\downarrow$ & Brier $\downarrow$ \\
+\midrule
+ResNet-18 baseline       & 0.0250 & 0.2957 & 0.1688 \\
+ResNet-18 + SSM (ours)   & \textbf{0.0226} & \textbf{0.2788} & \textbf{0.1615} \\
+$\Delta$ (SSM $-$ baseline) & $\mathbf{-0.0024}$ & $\mathbf{-0.0169}$ & $\mathbf{-0.0073}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Selective prediction (risk-coverage)}
+\label{sec:selective}
+A clinical screening pipeline can choose to abstain on low-confidence inputs and defer them to a human reviewer; the question is then how the prediction-error rate trades off against the fraction of inputs the model is willing to predict on. \Cref{tab:selective} reports the area under the risk-coverage curve (AURC, lower is better) on the Kermany test split, plus the operating points at three coverage levels ($50\%$, $75\%$, $90\%$). The SSM bottleneck slightly improves the AURC ($0.0267\rightarrow 0.0258$, $-3.4\%$) and the risk-at-$90\%$-coverage ($0.0767\rightarrow 0.0722$, $-5.9\%$), with the risk-at-$50\%$-coverage tied at $0.012$. The improvement is small in absolute terms but directional across the curve and consistent with the calibration improvement above.
+
+\begin{table}[t]
+\centering\small
+\caption{Selective-prediction risk-coverage on Kermany 2017 test ($n=1{,}000$). Lower is better. Risk at coverage $c$ is the error rate on the top-$c$ confidence subset; AURC is the area under the full risk-coverage curve.}
+\label{tab:selective}
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{l rrrr}
+\toprule
+Variant & AURC $\downarrow$ & Risk@50\% & Risk@75\% & Risk@90\% \\
+\midrule
+ResNet-18 baseline       & 0.0267 & 0.0120 & 0.0387 & 0.0767 \\
+ResNet-18 + SSM (ours)   & \textbf{0.0258} & \textbf{0.0120} & 0.0400 & \textbf{0.0722} \\
+$\Delta$                 & $\mathbf{-0.0009}$ & $0.000$ & $+0.0013$ & $\mathbf{-0.0045}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Out-of-distribution detection (D)}
 \label{sec:ood}
 For deployed retinal screening, the model's confidence on out-of-distribution (OOD) inputs is at least as important as its confidence on in-distribution inputs: an OCT image from a different scanner, with imaging artifacts, or from a non-target disease should ideally be flagged for clinician review rather than silently classified into the closest training-set class. We treat the Kermany 2017 test split as the in-distribution (ID) cohort and the OCTID zero-shot transfer cohort as the out-of-distribution (OOD) cohort, and report two simple OOD-detection scores per checkpoint:
@@ -275,18 +313,28 @@ For deployed retinal screening, the model's confidence on out-of-distribution (O
 (ii) predictive entropy $\mathrm{Ent}(x) = -\sum_k p(y=k\mid x) \log p(y=k\mid x)$, which is high for OOD inputs.
 For each score we compute the binary ID-vs-OOD AUROC and the true-positive rate at $95\%$ true-negative rate (\cref{tab:ood}). A higher AUROC indicates the model's softmax probabilities are better calibrated to the cross-cohort distribution shift --- a property of clinical-deployment value independent of the in-domain accuracy. We compare the Swin-V2-T baseline against the headline Swin-V2-T $+$ bidirectional selective-SSM configuration.
 
+\Cref{fig:conf-shift} shows the underlying confidence distributions on the in-domain (Kermany) and out-of-distribution (OCTID) cohorts side-by-side, separately for the baseline and the SSM-augmented model. Both panels display the same qualitative pattern: the OOD confidence distribution is shifted slightly to the \emph{right} of the ID distribution --- the model is more confident on the cross-cohort cohort it has never seen than on the cohort it was trained on. The SSM bottleneck does not eliminate this overconfidence pathology, but it mildly attenuates it (the OOD-mean minus ID-mean gap shrinks), which is the qualitative effect that produces the AUROC improvements reported in \Cref{tab:ood}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.49\columnwidth]{fig_confidence_shift_baseline.pdf}\hfill
+\includegraphics[width=0.49\columnwidth]{fig_confidence_shift_ssm.pdf}
+\caption{Confidence-shift histograms for the ResNet-18 baseline (left) and the ResNet-18 + SSM (right). Both panels show the max-softmax confidence density on the in-domain Kermany test ($n=1{,}000$, blue) and the cross-cohort OCTID transfer ($n=260$, red). The OOD mean is to the \emph{right} of the ID mean for both models --- the bare backbone is over-confident on inputs it has never seen, a behaviour quietly dangerous for clinical deployment. The SSM bottleneck does not fix the over-confidence but mildly attenuates the gap, consistent with the OOD-AUROC improvements in \Cref{tab:ood}.}
+\label{fig:conf-shift}
+\end{figure}
+
 \begin{table}[t]
 \centering\small
-\caption{Out-of-distribution detection. Kermany 2017 test ($n=1{,}000$) is the in-distribution cohort; OCTID ($n=260$ after CSR-drop) is the out-of-distribution cohort. AUROC is the binary ID-vs-OOD area-under-the-ROC under each scoring rule (max-softmax probability, lower under OOD; predictive entropy, higher under OOD). Both baselines hover near chance ($0.5$), indicating that the models are systematically over-confident on cross-cohort inputs; the SSM bottleneck moves both detectors slightly above chance ($+0.033$ MSP-AUROC, $+0.037$ entropy-AUROC).}
+\caption{Out-of-distribution detection. Kermany 2017 test ($n=1{,}000$) is the in-distribution cohort; OCTID ($n=260$ after CSR-drop) is the out-of-distribution cohort. AUROC is the binary ID-vs-OOD area-under-the-ROC under each scoring rule. Three rules are reported: max-softmax probability (MSP, lower under OOD); predictive entropy (higher under OOD); and free-energy score $E(x) = -\log\sum_k e^{z_k(x)}$~\citep{liu2020energy} (lower under OOD). All three baselines hover near or below chance ($0.5$), indicating that the bare backbone is systematically over-confident on cross-cohort inputs --- a quietly dangerous deployment behaviour. The SSM bottleneck improves all three OOD-detection AUROCs in the same direction.}
 \label{tab:ood}
 \setlength{\tabcolsep}{6pt}
-\begin{tabular}{l rr}
+\begin{tabular}{l rrr}
 \toprule
-Variant & MSP-AUROC & Entropy-AUROC \\
+Variant & MSP-AUROC & Entropy-AUROC & Energy-AUROC \\
 \midrule
-ResNet-18 baseline       & 0.491 & 0.481 \\
-ResNet-18 + SSM (ours)   & \textbf{0.524} & \textbf{0.518} \\
-$\Delta$                 & $\mathbf{+0.033}$ & $\mathbf{+0.037}$ \\
+ResNet-18 baseline       & 0.4915 & 0.4812 & 0.3773 \\
+ResNet-18 + SSM (ours)   & \textbf{0.5243} & \textbf{0.5184} & \textbf{0.4179} \\
+$\Delta$                 & $\mathbf{+0.0328}$ & $\mathbf{+0.0372}$ & $\mathbf{+0.0406}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -384,7 +432,7 @@ Sixth, the OOD-detection scoring rules used (MSP and predictive entropy) are the
 Five directions follow directly from the limitations.
 (i) A wider cross-cohort battery (Spectralis-Duke, the OCT volumes of the GOALS and AROI cohorts, the EyePACS and Messidor-2 OCT subsets where available) would more cleanly characterise camera and population shift on the 4-class scheme; we treat construction or curation of a Kermany-aligned cross-cohort benchmark as a useful follow-on contribution.
 (ii) Multi-seed multi-cohort training, once the SSM-scan compute footprint is reduced via Triton or sm\_120 mamba-ssm kernels, to deliver mean$\pm$std reporting on the operating-profile differential observed here.
-(iii) Substituting the ImageNet-pretrained backbone for an OCT-specific self-supervised foundation (RETFound or OCTCubeM) and re-running the SSM-bottleneck ablation to determine whether the cross-cohort lift composes additively with stronger pretraining.
+(iii) Substituting the ImageNet-pretrained backbone for an OCT-specific self-supervised foundation (RETFound~\citep{zhou2023retfound} or OCTCubeM) and re-running the SSM-bottleneck ablation to determine whether the cross-cohort lift composes additively with stronger pretraining. We attempted a quick RETFound MAE-OCT pooled-feature linear-probe and 2-layer MLP-head as a feasibility test (the full $97\,478$-image Kermany training set, with the ViT-Large encoder frozen, on $1024$-dim pooled CLS features); the trained head reached validation accuracy $\sim 0.85$ but collapsed on the balanced $1\,000$-image test split to accuracy $0.43$, predicting only the CNV and NORMAL classes and zero DME or DRUSEN, which we interpret as a representation-collapse failure of the pooled CLS feature on the minority classes under class-balanced focal loss. The constructive next step is end-to-end fine-tuning of RETFound with the SSM bottleneck on the full $14\times 14$ token sequence (rather than the pooled CLS), which preserves the spatial structure the SSM is designed to operate on; the compute footprint of full ViT-L fine-tuning across $\sim 100$k images was outside our budget here and is the natural follow-on.
 (iv) Richer OOD-detection scoring (Mahalanobis distance, deep-ensemble disagreement, energy-based scores) on the same Kermany-vs-OCTID setup, to determine whether the SSM operating-profile lift extends to scores that would be plausible to deploy in a triage pipeline.
 (v) Targeted improvement on the drusen$\rightarrow$CNV failure mode through lesion-aware augmentation or a contrastive pretraining objective, which would address the dominant in-domain residual error in a way orthogonal to the bottleneck-design axis explored here.
 

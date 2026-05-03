@@ -66,7 +66,9 @@ def main():
     ap.add_argument("--mlp_layers", type=int, default=2)
     ap.add_argument("--mlp_expand", type=int, default=4)
     ap.add_argument("--backbone", type=str, default="resnet18",
-                    choices=["resnet18", "resnet50", "efficientnet_b0", "vit_b_16", "swin_v2_t"])
+                    choices=["resnet18", "resnet50", "efficientnet_b0", "vit_b_16", "swin_v2_t", "retfound_vit_l"])
+    ap.add_argument("--freeze_backbone", action="store_true",
+                    help="Freeze the backbone parameters (head + SSM only get gradients).")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--num_workers", type=int, default=4)
     ap.add_argument("--tag", default="oct_baseline")
@@ -102,9 +104,30 @@ def main():
                      use_mlp=args.use_mlp, mlp_layers=args.mlp_layers,
                      mlp_expand=args.mlp_expand).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"[model] params={n_params/1e6:.2f}M  use_ssm={args.use_ssm} ssm_layers={args.ssm_layers}")
+    if args.freeze_backbone:
+        # Freeze the backbone (timm ViT-L for retfound or torchvision feature
+        # tree for the others). The SSM, transformer, mlp blocks plus norm,
+        # dropout, classifier remain trainable.
+        if hasattr(model, "_retfound"):
+            for p in model._retfound.parameters():
+                p.requires_grad = False
+        elif hasattr(model, "_swin_features"):
+            for p in model._swin_features.parameters():
+                p.requires_grad = False
+            for p in model._swin_norm.parameters():
+                p.requires_grad = False
+        elif hasattr(model, "_vit"):
+            for p in model._vit.parameters():
+                p.requires_grad = False
+        elif isinstance(model.backbone, torch.nn.Module):
+            for p in model.backbone.parameters():
+                p.requires_grad = False
+        n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"[model] params={n_params/1e6:.2f}M  TRAINABLE={n_trainable/1e6:.2f}M  use_ssm={args.use_ssm} (FROZEN backbone)")
+    else:
+        print(f"[model] params={n_params/1e6:.2f}M  use_ssm={args.use_ssm} ssm_layers={args.ssm_layers}")
 
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=5e-2)
+    opt = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=5e-2)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
 
     best_qwk = -1.0

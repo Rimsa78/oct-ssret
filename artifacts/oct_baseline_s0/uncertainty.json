@@ -1,0 +1,25 @@
+{
+  "ckpt": "artifacts/oct_baseline_s0/best.pt",
+  "n_id": 1000,
+  "n_ood": 260,
+  "calibration_id": {
+    "ECE_15bin": 0.02503755980730056,
+    "NLL": 0.29567453265190125,
+    "Brier": 0.16880989463320994,
+    "ID_max_conf_mean": 0.8652740120887756,
+    "ID_max_conf_std": 0.14132940769195557
+  },
+  "ood_detection_octid": {
+    "AUROC_MSP": 0.49151923076923076,
+    "AUROC_entropy": 0.4812153846153846,
+    "AUROC_energy": 0.3773192307692308,
+    "OOD_max_conf_mean": 0.8847998976707458,
+    "OOD_max_conf_std": 0.1161145493388176
+  },
+  "selective_prediction_id": {
+    "AURC": 0.026713758285971015,
+    "risk_at_50_coverage": 0.01200000000000001,
+    "risk_at_75_coverage": 0.03866666666666663,
+    "risk_at_90_coverage": 0.07666666666666666
+  }
+}

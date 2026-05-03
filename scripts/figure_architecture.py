@@ -38,15 +38,15 @@ ax.text(7.5, 6.1,
 block(0.2, 3.0, 1.5, 1.2, "OCT B-scan", "x: B×3×256×256\nFOV+CLAHE", C["input"], fontsize=9)
 
 # Band 2: Swin backbone (stacked stages)
-block(2.1, 2.7, 2.0, 1.7, "Swin-V2-T Encoder", "ImageNet1K pretrained\n28M params", C["swin"], fontsize=10)
+block(2.1, 2.7, 2.0, 1.7, "ResNet-18 Encoder", "ImageNet1K pretrained\n11.18M params", C["swin"], fontsize=10)
 # stage stripes
-for i, s in enumerate(["st1: /4, 96ch", "st2: /8, 192ch", "st3: /16, 384ch", "st4: /32, 768ch"]):
+for i, s in enumerate(["stem: /2, 64ch", "layer1-2: /4-/8, 64-128ch", "layer3: /16, 256ch", "layer4: /32, 512ch"]):
     ax.text(3.1, 4.0 - 0.30*i, s, ha="center", va="center",
             fontsize=8, color="#1f4e79")
 arrow(1.7, 3.5, 2.1, 3.5)
 
 # tensor between Swin and SSM
-ax.text(4.3, 3.5, "feat_map\nB×768×8×8\n→ tokens\nB×64×768",
+ax.text(4.3, 3.5, "feat_map\nB×512×8×8\n→ tokens\nB×64×768",
         ha="center", va="center", fontsize=8, color="#475569",
         bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#cbd5e1"))
 arrow(4.1, 3.3, 5.7, 3.3)
