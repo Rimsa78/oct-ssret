@@ -1,0 +1,47 @@
+{
+  "batch": 16,
+  "image_size": 256,
+  "device": "NVIDIA GeForce RTX 5090",
+  "results": [
+    {
+      "name": "ResNet-18 baseline",
+      "params_M": 11.179588,
+      "ms_per_batch": 2.1219491958618164,
+      "images_per_sec": 7540.2370759879095,
+      "peak_memory_MB": 201.010688,
+      "batch": 16
+    },
+    {
+      "name": "ResNet-18 + bidir SSM (ours)",
+      "params_M": 15.060548,
+      "ms_per_batch": 7.7875566482543945,
+      "images_per_sec": 2054.559693454872,
+      "peak_memory_MB": 329.7152,
+      "batch": 16
+    },
+    {
+      "name": "ResNet-50 baseline",
+      "params_M": 23.520324,
+      "ms_per_batch": 4.995970726013184,
+      "images_per_sec": 3202.580815113803,
+      "peak_memory_MB": 334.977024,
+      "batch": 16
+    },
+    {
+      "name": "EfficientNet-B0 baseline",
+      "params_M": 4.015232,
+      "ms_per_batch": 2.5892019271850586,
+      "images_per_sec": 6179.510308566378,
+      "peak_memory_MB": 256.433152,
+      "batch": 16
+    },
+    {
+      "name": "Swin-V2-T baseline",
+      "params_M": 27.587182,
+      "ms_per_batch": 9.11992073059082,
+      "images_per_sec": 1754.4012138539129,
+      "peak_memory_MB": 435.692032,
+      "batch": 16
+    }
+  ]
+}

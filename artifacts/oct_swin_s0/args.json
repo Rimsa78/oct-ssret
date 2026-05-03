@@ -1,0 +1,16 @@
+{
+  "epochs": 10,
+  "batch": 32,
+  "image_size": 256,
+  "lr": 0.0003,
+  "use_ssm": false,
+  "ssm_layers": 2,
+  "ssm_state": 16,
+  "use_transformer": false,
+  "transformer_layers": 2,
+  "transformer_heads": 8,
+  "backbone": "swin_v2_t",
+  "seed": 0,
+  "num_workers": 4,
+  "tag": "oct_swin_s0"
+}

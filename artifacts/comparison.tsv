@@ -1,0 +1,7 @@
+label	n_kerm	ACC_kerm	F1_kerm	QWK_kerm	AUC_kerm	n_octid	ACC_octid	F1_octid	QWK_octid	AUC_octid
+ResNet-50 (CNN baseline)	1000	0.899	0.897	0.879	0.995	260	0.715	0.561	0.798	0.820
+EfficientNet-B0 (CNN baseline)	1000	0.902	0.901	0.879	0.994	260	0.692	0.540	0.780	0.789
+ViT-B/16 (Transformer baseline)	1000	0.617	0.538	0.685	0.876	260	0.608	0.434	0.650	0.713
+OCT-SSRet/ResNet-18 baseline	1000	0.879	0.874	0.854	0.995	260	0.685	0.538	0.782	0.811
+OCT-SSRet/ResNet-18 + SSM	1000	0.890	0.887	0.859	0.995	260	0.692	0.527	0.776	0.810
+Swin-V2-T baseline (ours) (seeds=1)	1000	0.870	0.865	0.846	0.996	260	0.685	0.529	0.779	0.841

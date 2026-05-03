@@ -1,0 +1,13 @@
+{
+  "n_test": 1000,
+  "name_a": "ResNet-18 baseline",
+  "name_b": "ResNet-18 + SSM",
+  "acc_a": 0.879,
+  "acc_b": 0.89,
+  "n_both_right": 864,
+  "n_both_wrong": 95,
+  "n_only_a_right": 15,
+  "n_only_b_right": 26,
+  "chi2": 2.4390243902439024,
+  "p_value": 0.11834981273562839
+}

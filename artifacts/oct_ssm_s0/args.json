@@ -1,0 +1,13 @@
+{
+  "epochs": 10,
+  "batch": 64,
+  "image_size": 256,
+  "lr": 0.0003,
+  "use_ssm": true,
+  "ssm_layers": 2,
+  "ssm_state": 16,
+  "backbone": "resnet18",
+  "seed": 0,
+  "num_workers": 4,
+  "tag": "oct_ssm_s0"
+}

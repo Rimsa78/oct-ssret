@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering\small
+\caption{Compute analysis. Per-batch forward latency, effective throughput, peak memory, and parameter count for each architecture variant on a single NVIDIA GeForce RTX 5090 GPU at batch=16 and image size 256$\times$256. The selective state-space bottleneck adds modest latency relative to the Swin-V2-T baseline ($\approx$X.X$\times$ in pure-PyTorch) but is more than competitive with a Transformer-bottleneck of comparable role on OCT's short token sequence ($L=64$).}
+\label{tab:compute}
+\setlength{\tabcolsep}{4pt}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{l rrrr}
+\toprule
+Architecture & Params (M) & Latency (ms/batch) & Throughput (img/s) & Peak mem (MB) \\
+\midrule
+ResNet-18 baseline & 11.18 & 2.1 & 7540.2 & 201 \\
+ResNet-18 + bidir SSM (ours) & 15.06 & 7.8 & 2054.6 & 330 \\
+ResNet-50 baseline & 23.52 & 5.0 & 3202.6 & 335 \\
+EfficientNet-B0 baseline & 4.02 & 2.6 & 6179.5 & 256 \\
+Swin-V2-T baseline & 27.59 & 9.1 & 1754.4 & 436 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

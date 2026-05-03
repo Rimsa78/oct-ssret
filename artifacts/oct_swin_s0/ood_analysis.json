@@ -1,0 +1,16 @@
+{
+  "n_id": 1000,
+  "n_ood": 260,
+  "auroc_msp_ood": 0.47365,
+  "auroc_entropy_ood": 0.4726076923076923,
+  "tpr_at_95tnr_msp": 0.03461538461538462,
+  "tpr_at_95tnr_entropy": 0.038461538461538464,
+  "id_msp_mean": 0.8514102101325989,
+  "id_msp_std": 0.1390637904405594,
+  "ood_msp_mean": 0.8638371229171753,
+  "ood_msp_std": 0.13463354110717773,
+  "id_entropy_mean": 0.38776740431785583,
+  "id_entropy_std": 0.22036482393741608,
+  "ood_entropy_mean": 0.3629194498062134,
+  "ood_entropy_std": 0.2028508186340332
+}

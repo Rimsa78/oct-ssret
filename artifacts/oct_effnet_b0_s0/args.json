@@ -1,0 +1,13 @@
+{
+  "epochs": 10,
+  "batch": 64,
+  "image_size": 256,
+  "lr": 0.0003,
+  "use_ssm": false,
+  "ssm_layers": 2,
+  "ssm_state": 16,
+  "backbone": "efficientnet_b0",
+  "seed": 0,
+  "num_workers": 4,
+  "tag": "oct_effnet_b0_s0"
+}
