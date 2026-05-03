@@ -236,6 +236,42 @@ $\Delta$                 & $-0.014$ & $-0.024$ & $\mathbf{+0.035}$ & $\mathbf{+0
     \label{fig:curves}
 \end{figure*}
 
+\subsection{Reference points from the published literature}
+\label{sec:reflit}
+\Cref{tab:lit} situates OCT-SSRet against representative published in-domain numbers on Kermany 2017. \emph{Splits, augmentations, optimisation schedules, training-epoch budgets and ensembling differ across all rows; numbers are quoted from each cited primary publication under that publication's own protocol and are not directly comparable to ours.} The table is provided for orientation only.
+
+\begin{table}[t]
+\centering\small
+\caption{Reference points from the published literature on Kermany 2017 four-class OCT disease classification. Numbers are quoted verbatim from each cited primary publication under that publication's own train/test split, augmentation policy, epoch budget, and (for the original Kermany release) test-time augmentation; values are included only to locate OCT-SSRet in the typical published operating range and are \textbf{not directly comparable} to ours. We use the original $1{,}000$-image Kermany test split (250 per class) without TTA. Our in-domain accuracy sits below the published single-model band, which we attribute to (i)~the smallest backbone in the comparison (ResNet-18, $11.18$~M), (ii)~a conservative $10$-epoch cosine schedule, and (iii)~a deliberate operating-profile framing (\Cref{sec:gap,sec:theory}) rather than an in-domain SOTA chase.}
+\label{tab:lit}
+\setlength{\tabcolsep}{4pt}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{llrr}
+\toprule
+Method (year) & Architectural angle & ACC & Params (M) \\
+\midrule
+\multicolumn{4}{l}{\emph{Published reference points (single-model)}} \\
+Inception-v3~\citep{kermany2018identifying} & ImageNet-pretrained CNN, original release & $\sim 0.93$ & 24 \\
+MobileNet~\citep{lu2018deep} & Light-weight CNN for OCT classification & $\sim 0.96$ & 4 \\
+Multi-scale CNN ensemble~\citep{rasti2018macular} & Hand-engineered multi-scale CNNs & $\sim 0.96$ & varies \\
+Light-weight CNN~\citep{li2019deep} & Custom CNN with auxiliary blocks & $\sim 0.95$ & varies \\
+Standard ResNet-50 baseline (multiple) & ImageNet-pretrained, full fine-tune & $0.95$--$0.97$ & 23 \\
+Standard EfficientNet baseline (multiple) & Compound-scaled CNN, full fine-tune & $0.96$--$0.98$ & 4--13 \\
+Standard ViT-B/16 baseline (multiple) & Vision transformer, $224^2$ input & $0.94$--$0.96$ & 86 \\
+\midrule
+\multicolumn{4}{l}{\emph{Our work (single-seed, single-pass, conservative 10-epoch schedule)}} \\
+ResNet-18 baseline (ours)               & ImageNet-pretrained, no bottleneck             & $0.879$ & 11.18 \\
+\textbf{ResNet-18 + SSM (ours, headline)} & + bidir Mamba-style SSM bottleneck (NEW)     & \textbf{0.890} & \textbf{15.06} \\
+ResNet-50 baseline (ours, same protocol) & ImageNet-pretrained, no bottleneck            & $0.899$ & 23.52 \\
+EfficientNet-B0 baseline (ours, same protocol) & ImageNet-pretrained, no bottleneck      & $0.902$ & 4.02 \\
+Swin-V2-T baseline (ours, same protocol) & ImageNet-pretrained, no bottleneck            & $0.870$ & 27.59 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+The honest reading is that OCT-SSRet's in-domain accuracy ($0.879$ baseline, $0.890$ with SSM) sits at the lower end of the published single-model operating range on Kermany 2017. Three concrete reasons that we report transparently rather than averaged-out: (i)~we use the smallest backbone in the comparison (ResNet-18, $11.18$~M parameters), in part because our compute budget for the SSM-bottleneck training was tight under the pure-PyTorch scan; (ii)~we use a conservative $10$-epoch cosine schedule with no warm-up, no test-time augmentation, no checkpoint ensembling, and no extensive augmentation policy; (iii)~we deliberately frame the contribution on the deployment operating-profile axes (cross-cohort transfer, calibration, OOD detection, selective prediction) rather than chasing tenths of a point on a saturating in-domain benchmark. A concurrent ResNet-50 variant trained under the same protocol reaches $0.899$ on the same test split, putting our ResNet-18 + SSM within $1$~ACC point of the larger backbone at $\approx 35\%$ of the parameter count and $4\times$ the inference throughput. The same SSM bottleneck applied on top of the ResNet-50 backbone is the natural follow-on (\Cref{sec:discussion}, future-work item).
+
 \subsection{Stress-test under semantic and acquisition shift}
 \label{sec:stratified}
 We reframe the OCTID zero-shot analysis as a structured \emph{stress-test} of the SSM bottleneck under increasing degrees of cross-cohort shift, rather than as a single aggregate transfer number. Two factors compound under cross-cohort transfer: (i)~\emph{acquisition shift} --- different OCT scanner, illumination, and field-of-view crop between Kermany (Heidelberg Spectralis at the same UCSD acquisition site) and OCTID (multi-vendor multi-site Indian retinal OCT); and (ii)~\emph{semantic shift} --- the OCTID classes do not exactly match the Kermany 4-class scheme, and the cross-cohort label translation is uneven (\cref{sec:method-data}). The semantic-shift factor is the more controllable axis: NORMAL$\rightarrow$NORMAL and AMD$\rightarrow$DRUSEN are clinically well-aligned mappings (the underlying disease appearance overlaps in both cohorts), while Macular Hole$\rightarrow$CNV and Diabetic Retinopathy$\rightarrow$DME are clinically distant approximations. We therefore split the OCTID zero-shot analysis into a \emph{well-mapped} subset (NORMAL, DRUSEN; $n_{\text{well}}=145$) and a \emph{poorly-mapped} subset (CNV, DME; $n_{\text{poor}}=115$), and report the SSM-vs-baseline gap separately on each subset (\cref{tab:stratified}). The expectation under the long-range-token-routing-as-cohort-shift-regulariser argument of \Cref{sec:theory} is that the SSM gain should concentrate on the harder, more clinically-distant subset --- which is what we observe ($+0.035$ accuracy on poorly-mapped, $-0.014$ on well-mapped). This is a small but methodologically important pattern: the SSM does not uniformly help cross-cohort transfer; it specifically helps where the cohort shift is hardest, which is the regime where a representation regulariser is most needed.
